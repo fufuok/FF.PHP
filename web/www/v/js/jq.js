@@ -1,0 +1,1 @@
+document.write(unescape("%3Cscript%20src%3D%22http%3A//cdn.bootcss.com/jquery/1.12.4/jquery.min.js%22%3E%3C/script%3E%3Cscript%3Ewindow.jQuery%20%7C%7C%20document.write%28%27%3Cscript%20src%3D%22http%3A//lib.sinaapp.com/js/jquery/1.12.4/jquery-1.12.4.min.js%22%3E%3C%5C/script%3E%27%29%3B%3C/script%3E"));
