@@ -1,37 +1,37 @@
 <?php
 /**
- * DB.PDO 操作模式，支持 MySQL、MSSQL、SQLite、PGsql、SYBase、Oracle
+ * DB.PDO 操作模式, 支持 MySQL, MSSQL, SQLite, PGsql, SYBase, Oracle
  *
  * @author Fufu, 2013-07-18
  * @update 2015-03-20 exec 影响行数 -1 表示执行失败
- * @update 2016-07-07 统一采用预处理执行，避免 gbk 下 chr(0xbf) . chr(0x27) 注入风险
+ * @update 2016-07-07 统一采用预处理执行, 避免 gbk 下 chr(0xbf) . chr(0x27) 注入风险
  * @update 2016-07-18 增加事务处理
- * @update 2016-08-18 使用 setAttribute 设置 option，避免不同类型数据库对特定属性不支持抛出异常
- * @update 2016-10-18 Q()、one() 必定返回 array()
- * @update 2018-06-06 D()、U() 的条件参数绑定优化
+ * @update 2016-08-18 使用 setAttribute 设置 option, 避免不同类型数据库对特定属性不支持抛出异常
+ * @update 2016-10-18 Q(), one() 必定返回 array()
+ * @update 2018-06-06 D(), U() 的条件参数绑定优化
  * @update 2018-07-13 优化一些可能出现 Notice 的地方
- * @update 2018-12-28 无法连接数据库时，不再默认退出
- * @update 2019-03-13 仅同步时间
+ * @update 2018-12-28 无法连接数据库时, 不再默认退出
+ * @update 2019-06-16 仅同步时间
  */
 
 defined('FF') or die('404');
 
 class mPDO extends M
 {
-    protected $drive       = 'mPDO';                   // 数据库驱动类型，当前：PDO 模式
+    protected $drive       = 'mPDO';                   // 数据库驱动类型, 当前: PDO 模式
     protected $host        = '127.0.0.1';              // 主机
-    protected $port        = 0;                        // 端口，0 为使用默认端口
+    protected $port        = 0;                        // 端口, 0 为使用默认端口
     protected $dbtype      = 'mysql';                  // 数据库类型
     protected $dbname      = 'test';                   // 数据库名
     protected $dbuser      = 'root';                   // 登录用户名
     protected $dbpass      = '';                       // 登录密码
     protected $dbfile      = '';                       // SQLite 数据库文件位置
     protected $tbpre       = '';                       // 表名前缀
-    protected $charset     = 'utf8';                   // 数据库编码，'gbk', 'big5', 'utf8', 'utf8mb4'
+    protected $charset     = 'utf8';                   // 数据库编码, 'gbk', 'big5', 'utf8', 'utf8mb4'
     protected $lower       = 1;                        // 是否强制字段输出为小写字母
     protected $pconnect    = 0;                        // 是否使用持久连接
     protected $option      = array();                  // 其他参数
-    protected $bind_pre    = '?';                      // 预处理语句占位符，可用 ? 占位，插入数据必须用 :name
+    protected $bind_pre    = '?';                      // 预处理语句占位符, 可用 ? 占位, 插入数据必须用 :name
     protected $socket      = '';                       // unix_socket
     protected $dosql       = '';                       // 当前操作的 SQL
     protected $pdo         = null;                     // 当前连接 ID
@@ -67,12 +67,12 @@ class mPDO extends M
         // 初始化字符集
         $set_charset = "SET NAMES {$this->charset}";
 
-        // 连接字符串，指定 charset
+        // 连接字符串, 指定 charset
         $dsn = $this->dbtype .
                ':host=' . $this->host . ($this->port ? ';port=' . $this->port : '') .
                ';dbname=' . $this->dbname . ';charset=' . $this->charset;
 
-        // 根据数据库类型，拼接连接字符串，设置附加环境参数
+        // 根据数据库类型, 拼接连接字符串, 设置附加环境参数
         switch ($this->dbtype) {
             case 'mysql':
                 // MySQL 使用引用标准标识符
@@ -95,7 +95,7 @@ class mPDO extends M
                       ';database=' . $this->dbname
                     : 'dblib:host=' . $this->host . ($this->port ? ':' . $this->port : '') .
                       ';dbname=' . $this->dbname;
-                // 标准引号使用：标识符可以由双引号分隔，字符串只能使用由单引号分隔
+                // 标准引号使用: 标识符可以由双引号分隔, 字符串只能使用由单引号分隔
                 $commands[] = 'SET QUOTED_IDENTIFIER ON';
                 // $commands[] = $set_charset;
                 break;
@@ -115,7 +115,7 @@ class mPDO extends M
         // 是否强制列名为小写 y
         $this->lower && ($this->option[PDO::ATTR_CASE] = PDO::CASE_LOWER);
 
-        // 是否使用持久连接，弃用，采用静态加载 n
+        // 是否使用持久连接, 弃用, 采用静态加载 n
         // $this->pconnect && ($this->option[PDO::ATTR_PERSISTENT] = true);
 
         // 不转换 NULL 和空字符串 y
@@ -124,7 +124,7 @@ class mPDO extends M
         // 禁止取值时将数值转换为字符串 y
         $this->option[PDO::ATTR_STRINGIFY_FETCHES] = false;
 
-        // 优先采用数据库本地预处理而非预处理语句的模拟，MySQL.y, MSSQL.n
+        // 优先采用数据库本地预处理而非预处理语句的模拟, MySQL.y, MSSQL.n
         $this->option[PDO::ATTR_EMULATE_PREPARES] = false;
 
         // 抛出 exceptions 异常 y
@@ -142,7 +142,7 @@ class mPDO extends M
             try {
                 $this->pdo->setAttribute($a, $v);
             } catch (PDOException $error) {
-                // 屏蔽异常，比如 MSSQL 不支持设置 ATTR_EMULATE_PREPARES
+                // 屏蔽异常, 比如 MSSQL 不支持设置 ATTR_EMULATE_PREPARES
             }
         }
 
@@ -151,7 +151,7 @@ class mPDO extends M
             try {
                 $this->pdo->exec($cmd);
             } catch (PDOException $err) {
-                // 屏蔽异常，比如 MSSQL 不支持执行 SET NAMES utf8
+                // 屏蔽异常, 比如 MSSQL 不支持执行 SET NAMES utf8
             }
         }
     }
@@ -160,9 +160,9 @@ class mPDO extends M
      * PDO::query
      * public function query ($statement, $mode = PDO::ATTR_DEFAULT_FETCH_MODE, $arg3 = null) {}
      *
-     * @param  string $sql   SQL 语句
-     * @param  mixed  $binds 绑定参数
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
+     * @param string $sql   SQL 语句
+     * @param mixed  $binds 绑定参数
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
      * @return object
      */
     public function query($sql, $binds = array(), $types = array())
@@ -175,7 +175,7 @@ class mPDO extends M
         }
 
         try {
-            // 预处理语句，绑定参数
+            // 预处理语句, 绑定参数
             $this->sth = $this->bind($this->pdo->prepare($sql = $this->mkTable($sql)), $binds, $types);
             // 执行
             $this->result = $this->sth->execute();
@@ -193,10 +193,10 @@ class mPDO extends M
     /**
      * int PDO::exec ( string $statement )
      *
-     * @param  string $sql   SQL 语句
-     * @param  mixed  $binds 绑定参数
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
-     * @return int           返回受影响的行数，-1 出错，>1 行数，0 无更新
+     * @param string $sql   SQL 语句
+     * @param mixed  $binds 绑定参数
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
+     * @return int          返回受影响的行数, -1 出错, >1 行数, 0 无更新
      */
     public function exec($sql, $binds = array(), $types = array())
     {
@@ -282,12 +282,12 @@ class mPDO extends M
      * }
      *
      * mixed PDOStatement::fetch ([ int $fetch_style [, int $cursor_orientation = PDO::FETCH_ORI_NEXT ...] )
-     * 2: PDO::FETCH_ASSOC：返回一个索引为结果集列名的数组
-     * 3: PDO::FETCH_NUM：返回一个索引为以0开始的结果集列号的数组
-     * 4: PDO::FETCH_BOTH（默认）：返回一个索引为结果集列名和以0开始的列号的数组
-     * 5: PDO::FETCH_OBJ：返回一个属性名对应结果集列名的匿名对象
+     * 2: PDO::FETCH_ASSOC: 返回一个索引为结果集列名的数组
+     * 3: PDO::FETCH_NUM: 返回一个索引为以0开始的结果集列号的数组
+     * 4: PDO::FETCH_BOTH(默认): 返回一个索引为结果集列名和以0开始的列号的数组
+     * 5: PDO::FETCH_OBJ: 返回一个属性名对应结果集列名的匿名对象
      *
-     * @param  int $style 返回的数组风格
+     * @param int $style 返回的数组风格
      * @return array
      */
     public function fetch($style = PDO::FETCH_ASSOC)
@@ -297,8 +297,8 @@ class mPDO extends M
         try {
             $ret = $this->sth->fetch($style);
         } catch (PDOException $e) {
-            // 调试，显示错误
-            I('f.DebugPHP') && die('ERROR：' . $e->getMessage() . '<hr>' . mk_html($this->dosql) . '<hr>');
+            // 调试, 显示错误
+            I('f.DebugPHP') && die('ERROR: ' . $e->getMessage() . '<hr>' . mk_html($this->dosql) . '<hr>');
         }
 
         return $ret ? $ret : array();
@@ -309,12 +309,12 @@ class mPDO extends M
      * $this->fetchAll($this->query($sql))
      *
      * array PDOStatement::fetchAll ([ int $fetch_style [, mixed $fetch_argument [, array $ctor_args = array() ]]] )
-     * 2: PDO::FETCH_ASSOC：返回一个索引为结果集列名的数组
-     * 3: PDO::FETCH_NUM：返回一个索引为以0开始的结果集列号的数组
-     * 4: PDO::FETCH_BOTH（默认）：返回一个索引为结果集列名和以0开始的列号的数组
-     * 5: PDO::FETCH_OBJ：返回一个属性名对应结果集列名的匿名对象
+     * 2: PDO::FETCH_ASSOC: 返回一个索引为结果集列名的数组
+     * 3: PDO::FETCH_NUM: 返回一个索引为以0开始的结果集列号的数组
+     * 4: PDO::FETCH_BOTH(默认): 返回一个索引为结果集列名和以0开始的列号的数组
+     * 5: PDO::FETCH_OBJ: 返回一个属性名对应结果集列名的匿名对象
      *
-     * @param  int $style 返回的数组风格
+     * @param int $style 返回的数组风格
      * @return array
      */
     public function fetchAll($style = PDO::FETCH_ASSOC)
@@ -325,8 +325,8 @@ class mPDO extends M
             $ret = $this->sth->fetchAll($style);
             $this->rows = count($ret);
         } catch (PDOException $e) {
-            // 调试，显示错误
-            I('f.DebugPHP') && die('ERROR：' . $e->getMessage() . '<hr>' . mk_html($this->dosql) . '<hr>');
+            // 调试, 显示错误
+            I('f.DebugPHP') && die('ERROR: ' . $e->getMessage() . '<hr>' . mk_html($this->dosql) . '<hr>');
         }
 
         return $ret;
@@ -336,10 +336,10 @@ class mPDO extends M
      * 执行查询并转换结果集为数组
      * $this->Q($sql)
      *
-     * @param  string $sql   SQL 语句
-     * @param  mixed  $binds 绑定参数
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
-     * @param  int    $style 返回的数组风格
+     * @param string $sql   SQL 语句
+     * @param mixed  $binds 绑定参数
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
+     * @param int    $style 返回的数组风格
      * @return array
      */
     public function Q($sql = '', $binds = array(), $types = array(), $style = PDO::FETCH_ASSOC)
@@ -351,10 +351,10 @@ class mPDO extends M
      * 执行查询并返回第一条记录到数组
      * $this->one($sql)
      *
-     * @param  string $sql   SQL 语句
-     * @param  mixed  $binds 绑定参数
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
-     * @param  int    $style 返回的数组风格
+     * @param string $sql   SQL 语句
+     * @param mixed  $binds 绑定参数
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
+     * @param int    $style 返回的数组风格
      * @return array
      */
     public function one($sql = '', $binds = array(), $types = array(), $style = PDO::FETCH_ASSOC)
@@ -366,9 +366,9 @@ class mPDO extends M
      * 执行查询并返回第一条记录的第一个字段值
      * $this->first($sql)
      *
-     * @param  string $sql   SQL 语句
-     * @param  mixed  $binds 绑定参数
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
+     * @param string $sql   SQL 语句
+     * @param mixed  $binds 绑定参数
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
      * @return string
      */
     public function first($sql = '', $binds = array(), $types = array())
@@ -378,17 +378,17 @@ class mPDO extends M
     }
 
     /**
-     * 插入数据 INSERT INTO（逐条插入）
+     * 插入数据 INSERT INTO(逐条插入)
      *
-     * 支持两种模式，数据数组 或 字段 + 值(不推荐，注意过滤字符)，支持插入多条数据，示例：
+     * 支持两种模式, 数据数组 或 字段 + 值(不推荐, 注意过滤字符), 支持插入多条数据, 示例: 
      * $this->db()->I("__B__table", "user, vip", "'fufu', 1");
      * $this->db()->I("__B__table", array('user' => 'fufu', 'vip' => 1));
      * $this->db()->I("__B__table", array(array('user' => 'fufu', 'vip' => 1), array('user' => 'test', 'vip' => 9)));
      *
-     * @param  string $table 表名
-     * @param  mixed  $datas 参数数据集 / 字段字符串
-     * @param  mixed  $types 绑定参数对应的类型，建议省略 / 值字符串
-     * @return mixed         返回 lastInsertId 值或值数组
+     * @param string $table 表名
+     * @param mixed  $datas 参数数据集 / 字段字符串
+     * @param mixed  $types 绑定参数对应的类型, 建议省略 / 值字符串
+     * @return mixed        返回 lastInsertId 值或值数组
      */
     public function I($table, $datas, $types = '')
     {
@@ -414,7 +414,7 @@ class mPDO extends M
                 }
             }
         } else {
-            // 兼容模式，单记录插入，上层需要注入防护!!!
+            // 兼容模式, 单记录插入, 上层需要注入防护!!!
             if ($this->exec("INSERT INTO {$table} ({$datas}) VALUES ({$types})")) {
                 $last_id[] = $this->lastid = $this->pdo->lastInsertId();
                 $this->rows = 1;
@@ -426,10 +426,10 @@ class mPDO extends M
     }
 
     /**
-     * 更新数据 UPDATE，单条
-     * $datas 为数组时，WHERE 条件不能用问号占位符，且 $binds 需要是数组，并且会优先以 $datas 的数据绑定
+     * 更新数据 UPDATE, 单条
+     * $datas 为数组时, WHERE 条件不能用问号占位符, 且 $binds 需要是数组, 并且会优先以 $datas 的数据绑定
      *
-     * 支持两种模式，数据数组 或 字符串，示例：
+     * 支持两种模式, 数据数组 或 字符串, 示例: 
      * $this->db()->U("__B__table", "user = 'fufu', vip = 1", "user_id = 1");
      * $this->db()->U("__B__table", array('user' => 'fufu', 'vip' => 1), "user_id = 1");
      * $this->db()->U("__B__table", array('vip' => 8, 'user' => 'test'), "vip < :vip");
@@ -437,12 +437,12 @@ class mPDO extends M
      * $this->db()->U("__B__table", array('vip' => 8, 'user' => 'test'), "vip = :vip", array('vip' => 9)); // vip == 8
      * $this->db()->U("__B__table", array('vip' => 8, 'user' => 'test'), "vip = :vipbind", array('vipbind' => 9)); // ok
      *
-     * @param  string $table 表名
-     * @param  string $datas 数据数组或 SET 更新 SQL 串
-     * @param  string $where 更新条件
-     * @param  mixed  $binds 绑定参数（$datas 优先）
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
-     * @return int           返回更新影响的行数
+     * @param string $table 表名
+     * @param string $datas 数据数组或 SET 更新 SQL 串
+     * @param string $where 更新条件
+     * @param mixed  $binds 绑定参数($datas 优先)
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
+     * @return int          返回更新影响的行数
      */
     public function U($table, $datas, $where = '1 = 1', $binds = array(), $types = array())
     {
@@ -465,7 +465,7 @@ class mPDO extends M
                 $ret = $this->exec($sql, $binds, $types);
             }
         } else {
-            // 兼容模式，上层需要注入防护!!!
+            // 兼容模式, 上层需要注入防护!!!
             $ret = $this->exec("UPDATE {$table} SET {$datas} WHERE {$where}", $binds, $types);
         }
 
@@ -478,11 +478,11 @@ class mPDO extends M
      * $this->db()->D("__B__table", "vip = ?", 9)
      * $this->db()->D("__B__table", "vip = :vip", array('vip' => 9))
      *
-     * @param  string $table 表名
-     * @param  string $where 删除条件
-     * @param  mixed  $binds 绑定参数
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
-     * @return int           返回受影响的记录行数
+     * @param string $table 表名
+     * @param string $where 删除条件
+     * @param mixed  $binds 绑定参数
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
+     * @return int          返回受影响的记录行数
      */
     public function D($table, $where = '1 = 1', $binds = array(), $types = array())
     {
@@ -492,11 +492,11 @@ class mPDO extends M
     /**
      * SQL 执行结果及显示调试
      *
-     * @param  string $sql   已执行的 SQL 语句
-     * @param  object $err   PDOException
-     * @param  mixed  $binds 绑定参数
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
-     * @return int           返回执行是否成功
+     * @param string $sql   已执行的 SQL 语句
+     * @param object $err   PDOException
+     * @param mixed  $binds 绑定参数
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
+     * @return int          返回执行是否成功
      */
     public function success($sql = '', $err = null, $binds = array(), $types = array())
     {
@@ -516,7 +516,7 @@ class mPDO extends M
         // 写入调试 SQL 或显示错误
         if (I('f.DebugPHP')) {
             $this->sql[] = $this->dosql;
-            $success || die('ERROR：' . $errmsg . '<hr>' . mk_html($this->dosql) . '<hr>');
+            $success || die('ERROR: ' . $errmsg . '<hr>' . mk_html($this->dosql) . '<hr>');
         }
 
         return $success;
@@ -525,10 +525,10 @@ class mPDO extends M
     /**
      * 预处理语句
      *
-     * @param  object $sth   PDOStatement
-     * @param  mixed  $binds 绑定参数
-     * @param  mixed  $types 绑定参数对应的类型，建议省略
-     * @return int           返回执行是否成功
+     * @param object $sth   PDOStatement
+     * @param mixed  $binds 绑定参数
+     * @param mixed  $types 绑定参数对应的类型, 建议省略
+     * @return int          返回执行是否成功
      */
     public function bind($sth, $binds = array(), $types = array())
     {
@@ -544,14 +544,14 @@ class mPDO extends M
             // $binds = array('abc' = 123);
             // $sql = "SELECT * FROM TABLE WHERE test = ?";
             // $binds = array(123);
-            // 插入和更新数据因为需要字段，必须用 :name
+            // 插入和更新数据因为需要字段, 必须用 :name
             $i = 0;
 
             foreach ($binds as $k => $v) {
                 // 数组自动序列化
                 is_array($v) && $v = serialize($v);
 
-                // 避免一下，直接不允许这两字符
+                // 避免一下, 直接不允许这两字符
                 // $v = str_replace(array(chr(0xbf), chr(0x27)), '', $v);
 
                 $i++;
@@ -581,11 +581,11 @@ class mPDO extends M
 
     /**
      * 手工实现预处理语句的模拟
-     * 宽字节 GBK PHP5.3.6-： chr(0xbf) . chr(0x27)
+     * 宽字节 GBK PHP5.3.6-:  chr(0xbf) . chr(0x27)
      *
-     * @param  string $sql   SQL 语句
-     * @param  mixed  $binds 需要绑定的数据
-     * @return int           返回执行是否成功
+     * @param string $sql   SQL 语句
+     * @param mixed  $binds 需要绑定的数据
+     * @return int          返回执行是否成功
      */
     public function bindstr($sql, $binds = array())
     {
@@ -604,7 +604,7 @@ class mPDO extends M
         // 占位符长度
         $len_pre = strlen($this->bind_pre);
 
-        // 处理单引号字符串中的 ? 避免被当标记替换成参数内容，先替换 $sql 中 '*?*' 单引号中的 ? 为空格
+        // 处理单引号字符串中的 ? 避免被当标记替换成参数内容, 先替换 $sql 中 '*?*' 单引号中的 ? 为空格
         // 注意 sql 中的字符串必须用单引用括起来
         if ($n = preg_match_all("/'[^']*'/i", $sql, $matches)) {
             // 替换 '123?' 为 '123 '
@@ -614,9 +614,9 @@ class mPDO extends M
             $tmp = $sql;
         }
 
-        // 得到真正需要绑定参数的标记个数，排除了单引号中的标记符
+        // 得到真正需要绑定参数的标记个数, 排除了单引号中的标记符
         $n = preg_match_all('/' . preg_quote($this->bind_pre, '/') . '/i', $tmp, $matches, PREG_OFFSET_CAPTURE);
-        // 需要绑定的参数数量异常，原样返回
+        // 需要绑定的参数数量异常, 原样返回
         if ($bind_count !== $n) {
             return $sql;
         }
@@ -633,9 +633,9 @@ class mPDO extends M
     /**
      * public string PDO::quote ( string $string [, int $parameter_type = PDO::PARAM_STR ] )
      *
-     * @param  mixed $data   数据
-     * @param  int   $in_str 0 数组序列化，保存入库使用，1 数组转为 (1,2) 为 IN 使用
-     * @return object        返回执行结果
+     * @param mixed $data   数据
+     * @param int   $in_str 0 数组序列化, 保存入库使用, 1 数组转为 (1,2) 为 IN 使用
+     * @return object       返回执行结果
      */
     public function quote($data, $in_str = 0)
     {
@@ -668,7 +668,7 @@ class mPDO extends M
     /**
      * 处理表名前缀
      *
-     * @param  string $str 表名或 SQL
+     * @param string $str 表名或 SQL
      * @return string
      */
     public function mkTable($str = '')

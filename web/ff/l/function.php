@@ -3306,15 +3306,45 @@ function find_array($array = array(), $txt = '', $is_dict = false)
 }
 
 // PHP ping 域名或IP，0 不通，> 0 ttl(ms)
-function ping($host, $sec = 1, $usec = 0)
+function ping($host, $timeout = 1, $count = 1)
 {
+    $use_exec = false;
+    if (function_exists('exec')) {
+        $line = @exec('echo FF', $res, $code);
+        $use_exec = $line && $code === 0;
+    }
+
+    if ($use_exec) {
+        $if_win = strtoupper(substr(PHP_OS, 0, 3)) === 'WIN';
+        $ping_cmd = 'ping' . ($if_win ? ' -n ' . $count . ' -w 1000 ' : ' -c' . $count . ' -W1 ') . $host;
+        $line = @exec($ping_cmd, $res, $code);
+        if ($line && $code === 0) {
+            preg_match('#/([\d\.]+)/#', $line, $matchs);
+            empty($matchs[1]) && preg_match('#=\s*([\d\.]*)\s*ms\s*$#', $line, $matchs);
+            $ret = empty($matchs[1]) ? 0 : $matchs[1];
+        } else {
+            $ret = 0;
+        }
+
+        return $ret;
+    }
+
     /* ICMP ping packet with a pre-calculated checksum */
     $package = "\x08\x00\x19\x2f\x00\x00\x00\x00\x70\x69\x6e\x67";
-    $socket = socket_create(AF_INET, SOCK_RAW, 1);
-    $ret = -1;
+    $socket = @socket_create(AF_INET, SOCK_RAW, 1);
 
+    if ($socket === false) {
+        // 10013 以一种访问权限不允许的方式做了一个访问套接字的尝试
+        $errorcode = socket_last_error();
+        $errormsg = socket_strerror($errorcode);
+        debug_file($errorcode . ': ' . $errormsg);
+
+        return 0;
+    }
+
+    $ret = -1;
     if ($socket
-        && (socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => $sec, 'usec' => $usec)))
+        && (socket_set_option($socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => $timeout, 'usec' => 0)))
         && (socket_connect($socket, $host, null))
     ) {
         $ts = microtime(true);

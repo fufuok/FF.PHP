@@ -21,7 +21,7 @@ class index extends C
         $this->V('index');
     }
 
-    //.加密字符串
+    // 加密字符串
     public function _get__xor()
     {
         if ($_GET['ff'] == mk_date('1d')) {
