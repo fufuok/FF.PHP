@@ -3494,6 +3494,8 @@ function mk_request(
     if (!$header) {
         // POST, JSON 请求头, Akamai 使用 application/json; charset=utf-8 有问题
         if ('post' == $method || 'json' == $method) {
+            // Disable Expect: (Akamai) Expect 100-continue header is not supported
+            $header[] = 'Expect:';
             $header[] = 'post' == $method
                 ? 'Content-Type: application/x-www-form-urlencoded'
                 : 'Content-Type: application/json';
