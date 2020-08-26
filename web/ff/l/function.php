@@ -662,9 +662,9 @@ function get_pages($total, $page_size = 20, $page = 1, $url = '', $sort = false)
     $pagenav .= $page > 1
         ? ' <a href="' . str_replace('{p}', 1, $url) . '">首页</a> ' .
           '<a href="' . str_replace('{p}', $prepg, $url) . '">上页</a> '
-        : ' <span>首页</span> <span>上页</span> ';
+        : ' <span class="cgray">首页</span> <span class="cgray">上页</span> ';
     $pagenav .= $nextpg > $lastpg
-        ? ' <span>下页</span> <span>末页</span> '
+        ? ' <span class="cgray">下页</span> <span class="cgray">末页</span> '
         : ' <a href="' . str_replace('{p}', $nextpg, $url) . '">下页</a> ' .
           '<a href="' . str_replace('{p}', $lastpg, $url) . '">末页</a> ';
     $pagenav .= '<span>第<strong>' . $page . '/' . $lastpg . '</strong>页</span>';
@@ -713,9 +713,9 @@ function get_pages_ajax($total, $page_size = 20, $page = 1, $url = '', $sort = f
     $pagenav .= $page > 1
         ? ' <a href="' . str_replace('{p}', 1, $url) . '">首页</a> ' .
           '<a href="' . str_replace('{p}', $prepg, $url) . '">上页</a> '
-        : ' <span>首页</span> <span>上页</span> ';
+        : ' <span class="cgray">首页</span> <span class="cgray">上页</span> ';
     $pagenav .= $nextpg > $lastpg
-        ? '<span>下页</span> <span>末页</span> '
+        ? '<span class="cgray">下页</span> <span class="cgray">末页</span> '
         : '<a href="' . str_replace('{p}', $nextpg, $url) . '">下页</a> ' .
           '<a href="' . str_replace('{p}', $lastpg, $url) . '">末页</a> ';
     $pagenav .= '<span>第<strong>' . $page . '/' . $lastpg . '</strong>页</span>';
@@ -1839,7 +1839,7 @@ function mk_rmb($num, $len = 0, $fix = 1)
     (!$len || $len > 15) && $len = 15;  // 仟亿
 
     if (is_numeric($num = trim($num))) {
-        $pre = $num{0} == '-' ? '负' : '';
+        $pre = $num[0] == '-' ? '负' : '';
         if (($num_len = strlen($num = str_replace(array('.', '-'), '', sprintf("%.2f", $num)))) <= ($len = $len - 1)) {
             $zh_num = array('零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖');
             $zh_yuan = array('分', '角', '元', '拾', '佰', '仟', '万', '拾', '佰', '仟', '亿', '拾', '佰', '仟');
@@ -2210,7 +2210,7 @@ function get_cache_path($str, $folder = 'user', $with_str = 1)
     $pos = strpos($folder = mk_rtrim(preg_replace('/\/+|\\\+/', DS, $folder), DS, DS), CACHE);
     ($pos === false || $pos !== 0) && $folder = mk_ltrim($folder, DS, CACHE);
 
-    return $folder . $str{1} . DS . $str{3} . DS . $str{7} . DS . ($with_str ? $str . DS : '');
+    return $folder . $str[1] . DS . $str[3] . DS . $str[7] . DS . ($with_str ? $str . DS : '');
 }
 
 // 类库数据缓存配置信息，返回目录和文件名，便于清除该方法生成的所有缓存文件
@@ -2224,7 +2224,7 @@ function get_cache_base($base_str, $base_dir = '__M__')
     ($pos === false || $pos !== 0) && $base_path = mk_ltrim($base_path, DS, CACHE);
 
     // 清除该目录即可清除所有缓存
-    $base_path .= $base_name{2} . DS . $base_name{5} . DS . $base_name{9} . DS . $base_name . DS;
+    $base_path .= $base_name[2] . DS . $base_name[5] . DS . $base_name[9] . DS . $base_name . DS;
 
     return array(
         'base_name' => $base_name,
@@ -3034,7 +3034,7 @@ function un_string($str = null)
 {
     $ret = '';
     if ($str) {
-        $xor = $str{0};
+        $xor = $str[0];
         $str = str_replace(array('-', '_', '$'), array('+', '/', '='), substr($str, 1));
         $ret = $xor ? un_xor($str) : unserialize(base64_decode($str));
     }
@@ -3158,6 +3158,20 @@ function decodeUnicode($str)
     return preg_replace_callback('/\\\\u([0-9a-f]{4})/i', function ($matches) {
         get_chars(pack('H*', $matches[1]), 'UCS-2BE', 'UTF-8');
     }, $str);
+}
+
+// 输出或返回 JSON
+function json($data = array(), $code = 200, $unicode = false, $exit = true)
+{
+    $json = $unicode ? json_encode_unicode($data) : json_encode($data);
+
+    if ($exit) {
+        $code && http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+        exit($json);
+    }
+
+    return $json;
 }
 
 // 遍历目录下的文件：scan_dirs(array('/'), '/', 0, array(), 'http://url.cn/', null, 0, 'strtolower');
@@ -3386,7 +3400,7 @@ function ping($host, $timeout = 1, $count = 1)
             $ret = 0;
         }
 
-        return $ret;
+        return ceil($ret);
     }
 
     /* ICMP ping packet with a pre-calculated checksum */
@@ -3450,13 +3464,14 @@ function random_weight($data = array())
  * $add_header = array('Authorization: test', 'Accept: application/json');
  * mkRequest('url.api', 'json', array('d' => 1), 10, array('add_header' => $add_header));
  *
- * @param  string $url     请求网址
- * @param  string $method  请求方法
- * @param  array  $data    请求数据集
- * @param  int    $timeout 超时时间
- * @param  array  $option  其他选项：referer, agent, (array)add_header 附加请求头
- * @param  array  $header  指定要使用的请求头, 高优先级
- * @return int             返回码
+ * @param string $url     请求网址
+ * @param string $method  请求方法
+ * @param array  $data    请求数据集
+ * @param int    $timeout 超时时间
+ * @param array  $option  其他选项：referer, agent, (array)add_header 附加请求头
+ * @param array  $header  指定要使用的请求头, 高优先级
+ * @param bool   $debug   请求调试
+ * @return int            返回码
  */
 function mk_request(
     $url = '',
@@ -3464,7 +3479,8 @@ function mk_request(
     $data = array(),
     $timeout = 30,
     $option = array('agent' => ''),
-    $header = array()
+    $header = array(),
+    $debug = false
 ) {
     if (empty($url)) {
         return '';
@@ -3476,11 +3492,11 @@ function mk_request(
     !empty($header) && is_array($header) || $header = array();
 
     if (!$header) {
-        // POST, JSON 请求头
+        // POST, JSON 请求头, Akamai 使用 application/json; charset=utf-8 有问题
         if ('post' == $method || 'json' == $method) {
             $header[] = 'post' == $method
                 ? 'Content-Type: application/x-www-form-urlencoded'
-                : 'Content-Type: application/json; charset=utf-8';
+                : 'Content-Type: application/json';
             $header[] = 'Content-Length: ' . strlen($data);
         }
 
@@ -3528,6 +3544,7 @@ function mk_request(
         }
 
         $header && curl_setopt($ch, CURLOPT_HTTPHEADER, $header);
+        $debug && debug_file(curl_getinfo($ch), 'curl_info');
         $ret = curl_exec($ch);
         curl_close($ch);
     } else {
@@ -3649,21 +3666,29 @@ function endswith($haystack = '', $needle = '')
     return $haystack && $needle ? substr_compare($haystack, $needle, -strlen($needle)) === 0 : false;
 }
 
-// 检查是否允许访问
+// 检查是否允许访问, 有 SSL 账号信息时返回
 function allow_or_die()
 {
     $can_access = false;
+    $cname = '';
 
     if (is_https()) {
         // 证书里的用户账号信息, 无证书账号信息禁止访问
-        isset($_SERVER['SSL_CLIENT_S_DN_CN']) && fr($_SERVER['SSL_CLIENT_S_DN_CN']) || $can_access = true;
-    } elseif (defined('ONLY_HTTPS') && !ONLY_HTTPS
-              && defined('HTTP_PORT') && $_SERVER["SERVER_PORT"] == HTTP_PORT
-              && defined('ALLOW_IP') && ($allow_ip = explode(',', ALLOW_IP))
-    ) {
-        // http:80 公司 .1 内网访问
-        (in_array($user_ip = get_ip(), $allow_ip) || in_array(get_ip_x($user_ip), $allow_ip)) && $can_access = true;
+        $cname = isset($_SERVER['SSL_CLIENT_S_DN_CN']) ? fr($_SERVER['SSL_CLIENT_S_DN_CN']) : '';
+        $cname && $can_access = true;
+    } elseif (!constant('ONLY_HTTPS') && $_SERVER["SERVER_PORT"] == constant('HTTP_PORT')) {
+        if (!empty($_SESSION['dd_user_id'])) {
+            // 允许钉钉使用 http:port 访问
+            $can_access = true;
+        } elseif ($allow_ip = constant('ALLOW_IP')) {
+            // 允许公司 .1 网关等指定 IP 访问
+            $allow_ip = explode(',', $allow_ip);
+            (in_array($user_ip = get_ip(), $allow_ip) || in_array(get_ip_x($user_ip), $allow_ip))
+            && $can_access = true;
+        }
     }
 
     $can_access || FF::Msg('禁止访问', 403);
+
+    return $cname;
 }
