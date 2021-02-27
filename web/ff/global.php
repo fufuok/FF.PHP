@@ -28,10 +28,13 @@ define('ATTACH', A . 'attach' . DS);             // 项目附件保存路径
 define('ATTACH_URL', '/d/attach/');              // 项目附件文件根地址
 define('CSS', A . 'css' . DS);                   // 项目附件目录下的用户 CSS 缓存目录
 define('CSS_URL', '/d/css/');                    // 项目用户 CSS 根地址
-define('HOST',
-    (empty($_SERVER["HTTPS"]) || $_SERVER['HTTPS'] == 'off' ? 'http://' : 'https://') . $_SERVER['HTTP_HOST']);
+define('IS_HTTPS', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] && $_SERVER['HTTPS'] != 'off');
+define('HOST', (IS_HTTPS ? 'http://' : 'https://') . $_SERVER['HTTP_HOST']);
 define('HTTP', HOST . str_ireplace('/index.php', '', $_SERVER['SCRIPT_NAME']) . '/');
 define('MQGPC', function_exists('get_magic_quotes_gpc') ? get_magic_quotes_gpc() : 0);
+
+// Cookies SameSite 设置, None, Lax, Strict, 有值时必定启用 secure = true
+define('SAME_SITE', IS_HTTPS ? 'None' : '');
 
 // 项目基础配置
 define('WEB_NAME', 'FF');
@@ -53,14 +56,14 @@ $config['Index']      = 'index.php';   // 默认主页: index.php
 
 // SESSION
 $config['Session'] = array(
-    'autostart' => PHP_SAPI !== 'cli',    // 是否自动调用 session_start(), 必须设置
-    'handler'   => 'files',               // memcached, memcache, redis, files, handler && save_path 空时用 php.ini 配置
-    'save_path' => '2;' . D . 'session',  // 'ip:11211', 'tcp://ip:11211', '2;' . SESSION, 'tcp://ip:6379?auth=x'
-    'expire'    => 1440,                  // session.cookie_lifetime, session.gc_maxlifetime, 为 0 时默认 31536000 秒
-    'path'      => '/',                   // session.cookie_path
-    'domain'    => '',                    // session.cookie_domain 同域名共享时填写 '.xy.com'
-    'secure'    => false,                 // session.cookie_secure, true 表示 cookie 仅在使用 安全 链接时可用
-    'httponly'  => false                  // session.cookie_httponly, true: PHP 发送 cookie 的时候会使用 httponly 标记
+    'autostart' => PHP_SAPI !== 'cli',      // 是否自动调用 session_start(), 必须设置
+    'handler'   => 'files',                 // memcached, memcache, redis, files, handler && save_path 空时用 php.ini 配置
+    'save_path' => '2;' . D . 'session',    // 'ip:11211', 'tcp://ip:11211', '2;' . SESSION, 'tcp://ip:6379?auth=x'
+    'expire'    => 1440,                    // session.cookie_lifetime, session.gc_maxlifetime, 为 0 时默认 31536000 秒
+    'path'      => '/',                     // session.cookie_path
+    'domain'    => '',                      // session.cookie_domain 同域名共享时填写 '.xy.com'
+    'secure'    => IS_HTTPS,                // session.cookie_secure, true 表示 cookie 仅在使用 安全 链接时可用
+    'httponly'  => false,                   // session.cookie_httponly, true 表示 PHP 发送 cookie 的时候会使用 httponly 标记
 );
 
 // 杂项配置

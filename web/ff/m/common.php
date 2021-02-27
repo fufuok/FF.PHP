@@ -14,6 +14,7 @@
  * @update 2018-06-06 优化未开启 SESSION 时 I() 的取值
  * @update 2018-07-13 优化一些可能出现 Notice 的地方
  * @update 2019-06-15 优化 SESSION 在 CLI 的兼容性
+ * @update 2021-01-06 增加 Cookie SameSite 设置
  */
 
 defined('FF') or die('404');
@@ -49,7 +50,13 @@ if ($ff_sess_handler && $ff_sess_save_path) {
     ini_set('session.save_path', $ff_sess_save_path);
     // 生命周期为 0 时, 默认为 365 天
     ini_set('session.gc_maxlifetime', $ff_sess_expire ? $ff_sess_expire : 31536000);
-    session_set_cookie_params($ff_sess_expire, $ff_sess_path, $ff_sess_domain, $ff_sess_secure, $ff_sess_httponly);
+    session_set_cookie_params(
+        $ff_sess_expire,
+        $ff_sess_path . (defined('SAME_SITE') && SAME_SITE ? '; SameSite=' . SAME_SITE : ''),
+        $ff_sess_domain,
+        $ff_sess_secure,
+        $ff_sess_httponly
+    );
 }
 
 // 启动 Session
@@ -112,24 +119,24 @@ if (I('f.Session.autostart')) {
  * 自动化的加密和前缀意义不大, 特别是配合前端时
  * 如果非要使用前缀区分各场景下的 Cookie, 那么使用数组吧(在 Cookie 中表现为二维数组)
  *
- * 普通用法: 
+ * 普通用法:
  * set_cookie('name', 'value');                         // $_COOKIE['name'] == 'value';
  * set_cookie(array('key' => 'val'));                   // $_COOKIE['key'] == 'val';
  * set_cookie('name', 'value', 3600);                   // 1 小时生命周期
- * 设置一个数组值, 不支持空下标 array('' => 'val'): 
+ * 设置一个数组值, 不支持空下标 array('' => 'val'):
  * set_cookie('pre', array('a' => 'aa', 123, 'b'));     // $_COOKIE['pre']['a'] == 'aa';
- * 修改某个数组项: 
+ * 修改某个数组项:
  * set_cookie('pre', array('a' => 'bb'));               // $_COOKIE['pre'] == array('a' => 'bb', 0 => 123, 1 => 'b');
- * 获取数组项: 
+ * 获取数组项:
  * set_cookie('name');                                  // 'value';
  * set_cookie('pre', 'a');                              // 'bb';
  * set_cookie('pre.0');                                 // 123;
  * set_cookie('pre', 1);                                // 'b';
- * 删除某个数组项: 
+ * 删除某个数组项:
  * set_cookie('pre', array('a' => null));               // $_COOKIE['pre'] == array(0 => 123, 1 => 'b');
  * del_cookie('pre', 'a');
  * del_cookie('pre', 0);                                // $_COOKIE['pre'] == array(1 => 'b');
- * 删除某个数组所有项: 
+ * 删除某个数组所有项:
  * set_cookie(array('pre' => null));
  * set_cookie('pre', null);                             // isset($_COOKIE['pre']) === false
  * del_cookie('pre');
@@ -151,6 +158,11 @@ if (I('f.Session.autostart')) {
  */
 function set_cookie($name, $value = '', $expire = 0, $path = '/', $domain = '', $secure = false, $httponly = false)
 {
+    if (defined('SAME_SITE') && SAME_SITE) {
+        $add_path = '; SameSite=' . SAME_SITE;
+        substr_compare($path, $add_path, -strlen($add_path)) === 0 || $path .= $add_path;
+        $secure = true;
+    }
     $expire = $expire && is_numeric($expire) ? time() + $expire : 0;
     $null = time() - 86500;
 
@@ -256,6 +268,11 @@ function get_cookie($name, $item = '')
  */
 function del_cookie($name, $item = '', $path = '/', $domain = '', $secure = false, $httponly = false)
 {
+    if (defined('SAME_SITE') && SAME_SITE) {
+        $add_path = '; SameSite=' . SAME_SITE;
+        substr_compare($path, $add_path, -strlen($add_path)) === 0 || $path .= $add_path;
+        $secure = true;
+    }
     $value = $item === '' || $item === null ? null : array($item => null);
     set_cookie($name, $value, -86500, $path, $domain, $secure, $httponly);
 }
@@ -263,23 +280,23 @@ function del_cookie($name, $item = '', $path = '/', $domain = '', $secure = fals
 /**
  * 设置 SESSION, 与 set_cookie 用法相同, 只是 Cookie 最大只支持二维数组, Session 无限制
  *
- * 普通用法: 
+ * 普通用法:
  * set_session('name', 'value');                        // $_SESSION['name'] == 'value';
  * set_session(array('key' => 'val'));                  // $_SESSION['key'] == 'val';
- * 设置一个数组值, 不支持空下标 array('' => 'val'): 
+ * 设置一个数组值, 不支持空下标 array('' => 'val'):
  * set_session('pre', array('a' => 'aa', 123, 'b'));    // $_SESSION['pre']['a'] == 'aa';
- * 修改某个数组项: 
+ * 修改某个数组项:
  * set_session('pre', array('a' => 'bb'));              // $_SESSION['pre'] == array('a' => 'bb', 0 => 123, 1 => 'b');
- * 获取数组项: 
+ * 获取数组项:
  * get_session('name');                                 // 'value';
  * get_session('pre', 'a');                             // 'bb';
  * get_session('pre.0');                                // 123;
  * get_session('pre', 1);                               // 'b';
- * 删除某个数组项: 
+ * 删除某个数组项:
  * set_session('pre', array('a' => null));              // $_SESSION['pre'] == array(0 => 123, 1 => 'b');
  * del_session('pre', 'a');
  * del_session('pre', 0);                               // $_SESSION['pre'] == array(1 => 'b');
- * 删除某个数组所有项: 
+ * 删除某个数组所有项:
  * set_session(array('pre' => null));
  * set_session('pre', null);                            // isset($_SESSION['pre']) === false
  * del_session('pre');
@@ -670,7 +687,7 @@ function random($length = 6, $numeric = 0, $special = 0)
  * 若取得的数据是数组, 则每个数据都会执行过滤
  *
  * I('g.'); I('p.'); I('i.'); I('r.'); I('s.'); I('c.'); I('d.'); I('a.'); I('pp.'); I('ss.'); I('gg.');
- * 分别代表取值: 
+ * 分别代表取值:
  * $_GET; $_POST; 'php://input'; $_REQUEST; $_SESSION; $_COOKIE; 外部数据来源; 自动; PATH_INFO; $_SERVER; $GLOBALS;
  *
  * I('id', 0, 'get_id');
@@ -792,7 +809,6 @@ function I($name, $default = null, $filter = null, $datas = array(), $pre = '.')
             break;
         default:
             return $default;
-            break;
     }
 
     if ($ret === $default) {
@@ -1096,7 +1112,7 @@ function get_where($where = array(), $re_null = 0)
  * @param string $params url 参数
  * @return string
  */
-function mk_url($params = '')
+function mk_url($params = array())
 {
     return (isset($params['scheme']) ? $params['scheme'] . '://' : '') .
            (isset($params['user'])

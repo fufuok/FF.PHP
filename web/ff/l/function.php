@@ -751,17 +751,6 @@ function img_resize($simg, $w, $h, $dimg = '', $dext = 0, $dels = 1, $quality = 
             case 3:
                 $sim = @imagecreatefrompng($simg);
                 break;
-            case 6:
-                if (is_file($l = L . 'BMP.php')) {
-                    if (!class_exists('BMP')) {
-                        include($l);
-                    }
-                    $sim = BMP:: toGD($simg);
-                    break;
-                } else {
-                    return 3;
-                }
-            // no break
             default:
                 return 3;
             // 1 = GIF，2 = JPG，3 = PNG，4 = SWF，5 = PSD，6 = BMP，
@@ -859,17 +848,6 @@ function img_resizes($simg, $w, $h, $dimg = '', $dext = 0, $dels = 1, $quality =
             case 3:
                 $sim = @imagecreatefrompng($simg);
                 break;
-            case 6:
-                if (is_file($l = L . 'BMP.php')) {
-                    if (!class_exists('BMP')) {
-                        include($l);
-                    }
-                    $sim = BMP:: toGD($simg);
-                    break;
-                } else {
-                    return 3;
-                }
-            // no break
             default:
                 return 3;
             // 1 = GIF，2 = JPG，3 = PNG，4 = SWF，5 = PSD，6 = BMP，
@@ -2379,7 +2357,8 @@ function get_mobile($mobile)
 // 多个手机号参数整理，返回数组或逗号分隔的字符串
 function get_mobiles($mobile, $re_string = 0)
 {
-    $ret = get_array(filter(get_array($mobile, 0), 'get_mobile'));
+    $m = get_array($mobile, 0);
+    $ret = get_array(filter($m, 'get_mobile'));
     return $re_string ? implode(',', $ret) : $ret;
 }
 

@@ -43,6 +43,8 @@ class mPDO extends M
 
     public function __construct($options = array())
     {
+        parent::__construct();
+
         // 附加状态参数
         $commands = array();
 
@@ -163,7 +165,7 @@ class mPDO extends M
      * @param string $sql   SQL 语句
      * @param mixed  $binds 绑定参数
      * @param mixed  $types 绑定参数对应的类型, 建议省略
-     * @return object
+     * @return object|bool
      */
     public function query($sql, $binds = array(), $types = array())
     {
