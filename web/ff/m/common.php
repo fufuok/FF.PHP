@@ -21,7 +21,7 @@ defined('FF') or die('404');
 
 // 错误显示级别
 $ff_cfg = I('f.DebugPHP');
-$ff_cfg = $ff_cfg ? ($ff_cfg == 2 ? E_ALL : E_ALL & ~E_NOTICE & ~E_STRICT & ~E_USER_NOTICE) : 0;
+$ff_cfg = $ff_cfg ? ($ff_cfg == 2 ? E_ALL : E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED) : 0;
 error_reporting($ff_cfg);
 
 // 设置时区
@@ -71,7 +71,7 @@ if (I('f.Session.autostart')) {
             $str = '0123456789abcdefghijklmnopqrstuvwxyz';
             for ($i = 0; $i < 36; $i++) {
                 for ($j = 0; $j < 36; $j++) {
-                    mk_dirs($ff_sess_root . DS . $str{$i} . DS . $str{$j});
+                    mk_dirs($ff_sess_root . DS . $str[$i] . DS . $str[$j]);
                 }
             }
         }
@@ -79,11 +79,11 @@ if (I('f.Session.autostart')) {
         if (mt_rand(0, 99) == 0) {
             // 取两位随机字符组合目录
             $dir = strtolower(random(2));
-            $dir = $ff_sess_root . DS . $dir{0} . DS . $dir{1} . DS;
+            $dir = $ff_sess_root . DS . $dir[0] . DS . $dir[1] . DS;
             // 遍历该目录, 处理其中的 SESSION 文件
             if (is_dir($dir) && ($dirs = opendir($dir))) {
                 while (false !== ($filename = readdir($dirs))) {
-                    if ($filename{0} == '.') {
+                    if ($filename[0] == '.') {
                         continue;
                     }
                     // 删除已过期的 SESSION 文件
@@ -575,7 +575,7 @@ function get_xor($str = '', $key = '', $type = 0, $add_key = '')
     $str_len = strlen($str);
     for ($i = 0; $i < $str_len; $i++) {
         $j = $i * 7 % 64;
-        $ret .= $str{$i} ^ $key{$j};
+        $ret .= $str[$i] ^ $key[$j];
     }
 
     return $type ? @unserialize($ret) : base64_encode($ret);
@@ -674,7 +674,7 @@ function random($length = 6, $numeric = 0, $special = 0)
         }
         $max = strlen($chars) - 1;
         for ($i = 0; $i < $length; $i++) {
-            $ret .= $chars{mt_rand(0, $max)};
+            $ret .= $chars[mt_rand(0, $max)];
         }
     }
 

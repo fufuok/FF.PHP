@@ -31,7 +31,6 @@ define('CSS_URL', '/d/css/');                    // 项目用户 CSS 根地址
 define('IS_HTTPS', isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] && $_SERVER['HTTPS'] != 'off');
 define('HOST', (IS_HTTPS ? 'http://' : 'https://') . $_SERVER['HTTP_HOST']);
 define('HTTP', HOST . str_ireplace('/index.php', '', $_SERVER['SCRIPT_NAME']) . '/');
-define('MQGPC', function_exists('get_magic_quotes_gpc') ? get_magic_quotes_gpc() : 0);
 
 // Cookies SameSite 设置, None, Lax, Strict, 有值时必定启用 secure = true
 define('SAME_SITE', IS_HTTPS ? 'None' : '');
@@ -87,23 +86,23 @@ $config['SuperAdmin'] = '-1';                                          // 超级
 $config['FilterStr'] = array('htmlspecialchars', 'fr', 'fmsg', 'fid', 'fnum');
 
 // 数据库配置
-/**
 $config['DB'] = array(
     array(
         'drive'    => 'mPDO',       // 数据库驱动类型, 推荐 PDO
-        'host'     => 'localhost',  // 主机
+        'host'     => '',           // 主机
         'port'     => 0,            // 端口
-        'dbtype'   => 'mssql',      // 数据库类型, 涉及过滤方式
-        'dbname'   => 'XX',         // 数据库名
-        'dbuser'   => 'xx',         // 用户名
-        'dbpass'   => 'xxxxxxxx',   // 密码
-        'dbfile'   => '',           // SQLite 数据库文件位置
-        'tbpre'    => 'xyapi_',     // 表名前缀
+        'dbtype'   => 'sqlite',     // 数据库类型, 涉及过滤方式
+        'dbname'   => '',           // 数据库名
+        'dbuser'   => '',           // 用户名
+        'dbpass'   => '',           // 密码
+        'dbfile'   => ':memory:',   // SQLite 数据库文件位置
+        'tbpre'    => 'tb_',        // 表名前缀
         'charset'  => 'utf8',       // 数据库编码, 'gbk', 'big5', 'utf8'
         'lower'    => 1,            // 是否强制字段输出为小写字母
         'pconnect' => 1,            // 是否使用持久连接
         'dbxor'    => 0             // 数据库, 用户名, 密码是否加密
     ),
+    /**
     array(
         'drive' => 'mPDO',
         'host' => 'localhost',
@@ -194,9 +193,8 @@ $config['DB'] = array(
         'lower' => 1,
         'pconnect' => 1,
         'dbxor' => 0
-    ),
+    ),*/
 );
-*/
 
 // 公共环境处理及基础函数定义(必须)
 include(M . 'common.php');

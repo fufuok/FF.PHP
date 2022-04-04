@@ -85,10 +85,8 @@ class mPDO extends M
                                         ';host=' . $this->host . ';dbname=' . $this->dbname;
 
                 break;
-            case 'pgsql':
-                $commands[] = $set_charset;
-                break;
             case 'sybase':
+            case 'pgsql':
                 $commands[] = $set_charset;
                 break;
             case 'mssql':
@@ -99,14 +97,13 @@ class mPDO extends M
                       ';dbname=' . $this->dbname;
                 // 标准引号使用: 标识符可以由双引号分隔, 字符串只能使用由单引号分隔
                 $commands[] = 'SET QUOTED_IDENTIFIER ON';
-                // $commands[] = $set_charset;
                 break;
             case 'oracle':
                 $dsn = 'oci:dbname=//' . $this->host . ($this->port ? ':' . $this->port : '') .
                        '/' . $this->dbname . ';charset=' . $this->charset;
                 break;
             case 'sqlite':
-                $dsn = $this->dbtype . ':' . $this->dbfile;
+                $dsn = 'sqlite:' . $this->dbfile;
                 $this->dbuser = null;
                 $this->dbpass = null;
                 break;
@@ -136,7 +133,7 @@ class mPDO extends M
         try {
             $this->pdo = new PDO($dsn, $this->dbuser, $this->dbpass);
         } catch (PDOException $e) {
-            I('f.DebugPHP') && die('DBServer error: ' . $e->getMessage());
+            I('f.DebugSQL') && die('DBServer error: ' . $e->getMessage());
         }
 
         // 使用 PDO::setAttribute 避免一些非通用的属性导致异常
@@ -182,9 +179,9 @@ class mPDO extends M
             // 执行
             $this->result = $this->sth->execute();
             // 执行情况反馈
-            $this->success($sql, null, $binds, $types) || ($this->result = false);
+            $this->response($sql, null, $binds, $types) || ($this->result = false);
         } catch (PDOException $e) {
-            $this->success($sql, $e, $binds, $types);
+            $this->response($sql, $e, $binds, $types);
 
             return false;
         }
@@ -225,7 +222,7 @@ class mPDO extends M
                     return true;
                 }
             } catch (PDOException $e) {
-                $this->success('pdo->beginTransaction()', $e);
+                $this->response('pdo->beginTransaction()', $e);
             }
         }
 
@@ -246,7 +243,7 @@ class mPDO extends M
                     return true;
                 }
             } catch (PDOException $e) {
-                $this->success('pdo->commit()', $e);
+                $this->response('pdo->commit()', $e);
             }
         }
 
@@ -267,7 +264,7 @@ class mPDO extends M
                     return true;
                 }
             } catch (PDOException $e) {
-                $this->success('pdo->rollBack()', $e);
+                $this->response('pdo->rollBack()', $e);
             }
         }
 
@@ -300,7 +297,7 @@ class mPDO extends M
             $ret = $this->sth->fetch($style);
         } catch (PDOException $e) {
             // 调试, 显示错误
-            I('f.DebugPHP') && die('ERROR: ' . $e->getMessage() . '<hr>' . mk_html($this->dosql) . '<hr>');
+            I('f.DebugSQL') && die('ERROR: ' . $e->getMessage() . '<hr>' . mk_html($this->dosql) . '<hr>');
         }
 
         return $ret ? $ret : array();
@@ -328,7 +325,7 @@ class mPDO extends M
             $this->rows = count($ret);
         } catch (PDOException $e) {
             // 调试, 显示错误
-            I('f.DebugPHP') && die('ERROR: ' . $e->getMessage() . '<hr>' . mk_html($this->dosql) . '<hr>');
+            I('f.DebugSQL') && die('ERROR: ' . $e->getMessage() . '<hr>' . mk_html($this->dosql) . '<hr>');
         }
 
         return $ret;
@@ -498,13 +495,13 @@ class mPDO extends M
      * @param object $err   PDOException
      * @param mixed  $binds 绑定参数
      * @param mixed  $types 绑定参数对应的类型, 建议省略
-     * @return int          返回执行是否成功
+     * @return bool         返回执行是否成功
      */
-    public function success($sql = '', $err = null, $binds = array(), $types = array())
+    public function response($sql = '', $err = null, $binds = array(), $types = array())
     {
         // 记录当前操作的 SQL
         $this->dosql = $sql . ' __ Binds:' . print_r($binds, 1) . ' __ Types:' . print_r($types, 1);
-        $success = false;
+        $ok = false;
         $errmsg = '';
 
         // 是否有抛出异常
@@ -512,16 +509,16 @@ class mPDO extends M
             // 异常
         } else {
             // 执行结果是否有错误
-            ($success = $this->pdo->errorCode() === '00000') || $errmsg = implode(', ', $this->error());
+            ($ok = $this->pdo->errorCode() === '00000') || $errmsg = implode(', ', $this->error());
         }
 
         // 写入调试 SQL 或显示错误
-        if (I('f.DebugPHP')) {
+        if (I('f.DebugSQL')) {
             $this->sql[] = $this->dosql;
-            $success || die('ERROR: ' . $errmsg . '<hr>' . mk_html($this->dosql) . '<hr>');
+            $ok || die('ERROR: ' . $errmsg . '<hr>' . mk_html($this->dosql) . '<hr>');
         }
 
-        return $success;
+        return $ok;
     }
 
     /**

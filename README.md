@@ -1,7 +1,9 @@
 # FF PHP MVC 微框架
 
-自用轻量级框架, 适用自由开发的小型项目, 目前经手的项目基本都用他(今年会更一版)  
-性能好, 兼容性好(PHP 5.2 ~ 7.2)  
+自用轻量级框架, 适用自由开发的小型项目, 目前经手的项目基本都用他
+
+性能好, 兼容性好(PHP 5.2 ~ 8.0) 
+
 SESSION, COOKIES, PDO, 大量自定义函数可选用  
 
 支持 URL 常见写法:
@@ -39,6 +41,29 @@ class news extends C
     }
 }
 ```
+
+## 伪静态
+
+1. 根目录下 `web.config` 和 `.htaccess` 适配 IIS 和 Apache
+
+2. Nginx 方法很多:
+
+   ```
+   # 方案一, 推荐
+   location / {
+     try_files $uri $uri/ /index.php$uri$is_args$args;
+   }
+   
+   location ~ [^/]\.php(/|$) {
+     include fastcgi-php.conf;
+     fastcgi_pass php_upstream;
+   }
+   
+   # 方案二
+   if (!-e $request_filename) {
+     rewrite ^(.*)$ /index.php$1 last;
+   }
+   ```
 
 ## 目录和文件
 

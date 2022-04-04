@@ -18,6 +18,7 @@ class index extends C
     {
         $this->d['title'] = WEB_NAME;
 
+        // 加载前端页面 v/index.php
         $this->V('index');
     }
 

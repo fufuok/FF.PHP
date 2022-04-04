@@ -508,7 +508,7 @@ function do_download($file = '', $new_name = '', $is_stream = 0)
     if ($is_stream) {
         echo $down;
     } else {
-        readfile($down);
+        $size > 0 && readfile($down);
     }
 
     exit();
@@ -1740,7 +1740,7 @@ function mk_post($options, $value)
                 $ret['value'] = get_id($value);
                 break;
             case 'money':
-                $ret['value'] = number_format($value, 2, '.', '');
+                $ret['value'] = fnum($value);
                 break;
         }
     }
@@ -1838,16 +1838,16 @@ function mk_rmb($num, $len = 0, $fix = 1)
 }
 
 // 货币千分位
-function mk_money($num, $len = 2, $dot = '.', $pre = ',')
+function mk_money($n, $dec = 2, $dot = '.', $pre = ',')
 {
-    return is_numeric($num = trim($num)) ? number_format($num, $len, $dot, $pre) : 0;
+    return get_num($n, $dec, $dot, $pre);
 }
 
 // 获取浮点数: 数字字符串, 小数位数(不要动默认值)
-function get_num($n, $dec = null)
+function get_num($n, $dec = null, $dot = '.', $pre = '')
 {
     return is_numeric($n = trim($n))
-        ? (is_null($dec) ? floatval($n) : (float)number_format($n, $dec, '.', ''))
+        ? (is_null($dec) ? floatval($n) : number_format($n, $dec, $dot, $pre))
         : floatval(0);
 }
 
@@ -3134,9 +3134,8 @@ function json_encode_unicode($obj = '')
 // 转换中文编码
 function decodeUnicode($str)
 {
-    return preg_replace_callback('/\\\\u([0-9a-f]{4})/i', function ($matches) {
-        get_chars(pack('H*', $matches[1]), 'UCS-2BE', 'UTF-8');
-    }, $str);
+    $func = create_function('$matches', 'get_chars(pack("H*", $matches[1]), "UCS-2BE", "UTF-8");');
+    return preg_replace_callback('/\\\\u([0-9a-f]{4})/i', $func, $str);
 }
 
 // 输出或返回 JSON
